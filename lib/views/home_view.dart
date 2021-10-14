@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:modal_bottom_sheet/modal_bottom_sheet.dart';
+import 'package:todo_app/controllers/todo_controller.dart';
+import 'package:todo_app/models/todo.dart';
 import 'package:todo_app/shared_widgets/todo_tile_widget.dart';
 import 'package:todo_app/utilities/utils.dart';
 import 'package:todo_app/views/create_todo_view.dart';
 
 class HomeView extends StatelessWidget {
-  const HomeView({Key? key}) : super(key: key);
+  HomeView({Key? key}) : super(key: key);
+
+  final TodoController _todoController = TodoController();
 
   @override
   Widget build(BuildContext context) {
@@ -27,23 +31,35 @@ class HomeView extends StatelessWidget {
           IconButton(onPressed: () {}, icon: const Icon(Icons.search))
         ],
       ),
-      body: ListView.separated(
-          padding: const EdgeInsets.all(16),
-          itemBuilder: (context, index) {
-            return const TodoTileWidget(
-              status: false,
-            );
-          },
-          separatorBuilder: (context, index) {
-            return const SizedBox(
-              height: 10,
-            );
-          },
-          itemCount: 10),
+      body: FutureBuilder<Todo?>(
+          future: _todoController.getAllTodos(),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting &&
+                snapshot.data == null) {
+              return CircularProgressIndicator();
+            }
+            if (snapshot.connectionState == ConnectionState.done &&
+                snapshot.data == null) {
+              return Text('Something went wrong',style: TextStyle(fontSize: 30),);
+            }
+            return ListView.separated(
+                padding: const EdgeInsets.all(16),
+                itemBuilder: (context, index) {
+                  return TodoTileWidget(
+                    todo: snapshot.data!.data[index],
+                  );
+                },
+                separatorBuilder: (context, index) {
+                  return const SizedBox(
+                    height: 10,
+                  );
+                },
+                itemCount: snapshot.data!.data.length);
+          }),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
           Navigator.of(context).push(MaterialPageRoute(builder: (context) {
-            return CreateTodoView();
+            return const CreateTodoView();
           }));
         },
         child: const Icon(Icons.add),
@@ -54,7 +70,7 @@ class HomeView extends StatelessWidget {
             showBarModalBottomSheet(
                 context: context,
                 builder: (context) {
-                  return const CompletedTodoWidget();
+                  return CompletedTodoWidget();
                 });
           },
           child: Container(
@@ -105,24 +121,39 @@ class HomeView extends StatelessWidget {
 }
 
 class CompletedTodoWidget extends StatelessWidget {
-  const CompletedTodoWidget({
+   CompletedTodoWidget({
     Key? key,
   }) : super(key: key);
 
+  final TodoController _todoController = TodoController();
+
   @override
   Widget build(BuildContext context) {
-    return ListView.separated(
-        padding: const EdgeInsets.all(16),
-        itemBuilder: (context, index) {
-          return const TodoTileWidget(
-            status: true,
-          );
-        },
-        separatorBuilder: (context, index) {
-          return const SizedBox(
-            height: 10,
-          );
-        },
-        itemCount: 10);
+    return FutureBuilder<Todo?>(
+          future: _todoController.getAllTodos(),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting &&
+                snapshot.data == null) {
+              return CircularProgressIndicator();
+            }
+            if (snapshot.connectionState == ConnectionState.done &&
+                snapshot.data == null) {
+              return Text('Something went wrong',style: TextStyle(fontSize: 30),);
+            }
+            return ListView.separated(
+                padding: const EdgeInsets.all(16),
+                itemBuilder: (context, index) {
+                  return TodoTileWidget(
+                    todo: snapshot.data!.data[index],
+                  );
+                },
+                separatorBuilder: (context, index) {
+                  return const SizedBox(
+                    height: 10,
+                  );
+                },
+                itemCount: snapshot.data!.data.length);
+          })
+      ;
   }
 }
