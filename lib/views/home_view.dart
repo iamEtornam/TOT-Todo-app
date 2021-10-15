@@ -5,11 +5,19 @@ import 'package:todo_app/models/todo.dart';
 import 'package:todo_app/shared_widgets/todo_tile_widget.dart';
 import 'package:todo_app/utilities/utils.dart';
 import 'package:todo_app/views/create_todo_view.dart';
+import 'package:todo_app/views/search_delegate.dart';
 
-class HomeView extends StatelessWidget {
-  HomeView({Key? key}) : super(key: key);
+class HomeView extends StatefulWidget {
+  const HomeView({Key? key}) : super(key: key);
 
+  @override
+  State<HomeView> createState() => _HomeViewState();
+}
+
+class _HomeViewState extends State<HomeView> {
   final TodoController _todoController = TodoController();
+
+  int value = 1;
 
   @override
   Widget build(BuildContext context) {
@@ -27,16 +35,42 @@ class HomeView extends StatelessWidget {
         ),
         title: const Text('My Tasks'),
         actions: [
-          IconButton(onPressed: () {}, icon: const Icon(Icons.sort)),
-          IconButton(onPressed: () {}, icon: const Icon(Icons.search))
+          PopupMenuButton(
+              color: Colors.blue,
+              icon: const Icon(Icons.sort),
+              onSelected: (int value) {
+                setState(() {
+                  this.value = value;
+                });
+              },
+              itemBuilder: (context) => [
+                    const PopupMenuItem(
+                      child: Text(
+                        "To-do",
+                        style: TextStyle(color: Colors.white),
+                      ),
+                      value: 1,
+                    ),
+                    const PopupMenuItem(
+                      child: Text("Completed",
+                          style: TextStyle(color: Colors.white)),
+                      value: 2,
+                    )
+                  ]),
+          IconButton(
+              onPressed: () {
+                showSearch(
+                    context: context, delegate: MySearchDelegate(), query: '');
+              },
+              icon: const Icon(Icons.search))
         ],
       ),
       body: FutureBuilder<Todo?>(
-          future: _todoController.getAllTodos(status: false),
+          future: _todoController.getAllTodos(status: value != 1),
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting &&
                 snapshot.data == null) {
-              return const CircularProgressIndicator();
+              return const Center(child: CircularProgressIndicator());
             }
             if (snapshot.connectionState == ConnectionState.done &&
                 snapshot.data == null) {
@@ -48,8 +82,96 @@ class HomeView extends StatelessWidget {
             return ListView.separated(
                 padding: const EdgeInsets.all(16),
                 itemBuilder: (context, index) {
-                  return TodoTileWidget(
-                    todo: snapshot.data!.data[index],
+                  return Dismissible(
+                    secondaryBackground: const Material(
+                      color: Colors.red,
+                      child: Icon(
+                        Icons.delete,
+                        color: Colors.white,
+                      ),
+                    ),
+                    background: const Material(
+                      color: Colors.green,
+                      child: Icon(
+                        Icons.check_circle,
+                        color: Colors.white,
+                      ),
+                    ),
+                    onDismissed: (dismissedDirection) {
+                      SnackBar snackBar = const SnackBar(
+                        content: Text('Todo has been deleted!',
+                            style: TextStyle(
+                              color: Colors.green,
+                            )),
+                      );
+                      ScaffoldMessenger.of(context).showSnackBar(snackBar);
+                    },
+                    confirmDismiss: (dismissedDirection) async {
+                      if (dismissedDirection == DismissDirection.endToStart) {
+                        return showDialog<bool>(
+                            context: context,
+                            builder: (context) {
+                              return AlertDialog(
+                                content: const Text(
+                                    'Are you sure you want to delete this Todo?'),
+                                actions: [
+                                  TextButton(
+                                      onPressed: () async {
+                                        bool isDeleted =
+                                            await _todoController.deleteTodo(
+                                                snapshot.data!.data[index].id);
+                                        Navigator.of(context).pop(isDeleted);
+                                      },
+                                      child: const Text('Ok')),
+                                  TextButton(
+                                      onPressed: () =>
+                                          Navigator.of(context).pop(false),
+                                      child: const Text(
+                                        'Cancel',
+                                        style: TextStyle(color: Colors.red),
+                                      ))
+                                ],
+                              );
+                            });
+                      } else {
+                        //update
+                        showDialog<bool>(
+                            context: context,
+                            builder: (context) {
+                              return AlertDialog(
+                                content: const Text(
+                                    'Are you sure you want to update this Todo\'s status?'),
+                                actions: [
+                                  TextButton(
+                                      onPressed: () async {
+                                        bool isUpdate = await _todoController
+                                            .updateTodoStatus(
+                                                id: snapshot
+                                                    .data!.data[index].id,
+                                                status: !snapshot
+                                                    .data!.data[index].status);
+                                        Navigator.of(context).pop(isUpdate);
+                                        setState(() {});
+                                      },
+                                      child: const Text('Ok')),
+                                  TextButton(
+                                      onPressed: () =>
+                                          Navigator.of(context).pop(false),
+                                      child: const Text(
+                                        'Cancel',
+                                        style: TextStyle(color: Colors.red),
+                                      ))
+                                ],
+                              );
+                            });
+                      }
+
+                      // print('confirmDismiss');
+                    },
+                    key: UniqueKey(),
+                    child: TodoTileWidget(
+                      todo: snapshot.data!.data[index],
+                    ),
                   );
                 },
                 separatorBuilder: (context, index) {
@@ -73,7 +195,7 @@ class HomeView extends StatelessWidget {
             showBarModalBottomSheet(
                 context: context,
                 builder: (context) {
-                  return CompletedTodoWidget();
+                  return const CompletedTodoWidget();
                 });
           },
           child: Container(
@@ -123,11 +245,16 @@ class HomeView extends StatelessWidget {
   }
 }
 
-class CompletedTodoWidget extends StatelessWidget {
-  CompletedTodoWidget({
+class CompletedTodoWidget extends StatefulWidget {
+  const CompletedTodoWidget({
     Key? key,
   }) : super(key: key);
 
+  @override
+  State<CompletedTodoWidget> createState() => _CompletedTodoWidgetState();
+}
+
+class _CompletedTodoWidgetState extends State<CompletedTodoWidget> {
   final TodoController _todoController = TodoController();
 
   @override
@@ -149,9 +276,98 @@ class CompletedTodoWidget extends StatelessWidget {
           return ListView.separated(
               padding: const EdgeInsets.all(16),
               itemBuilder: (context, index) {
-                 return TodoTileWidget(
+                return Dismissible(
+                               secondaryBackground: const Material(
+                      color: Colors.red,
+                      child: Icon(
+                        Icons.delete,
+                        color: Colors.white,
+                      ),
+                    ),
+                    background: const Material(
+                      color: Colors.green,
+                      child: Icon(
+                        Icons.check_circle,
+                        color: Colors.white,
+                      ),
+                    ),
+                    onDismissed: (dismissedDirection) {
+                      SnackBar snackBar = const SnackBar(
+                        content: Text('Todo has been deleted!',
+                            style: TextStyle(
+                              color: Colors.green,
+                            )),
+                      );
+                      ScaffoldMessenger.of(context).showSnackBar(snackBar);
+                    },
+                    confirmDismiss: (dismissedDirection) async {
+                      if (dismissedDirection == DismissDirection.endToStart) {
+                        return showDialog<bool>(
+                            context: context,
+                            builder: (context) {
+                              return AlertDialog(
+                                content: const Text(
+                                    'Are you sure you want to delete this Todo?'),
+                                actions: [
+                                  TextButton(
+                                      onPressed: () async {
+                                        bool isDeleted =
+                                            await _todoController.deleteTodo(
+                                                snapshot.data!.data[index].id);
+                                        Navigator.of(context).pop(isDeleted);
+                                      },
+                                      child: const Text('Ok')),
+                                  TextButton(
+                                      onPressed: () =>
+                                          Navigator.of(context).pop(false),
+                                      child: const Text(
+                                        'Cancel',
+                                        style: TextStyle(color: Colors.red),
+                                      ))
+                                ],
+                              );
+                            });
+                      } else {
+//update
+
+                        showDialog<bool>(
+                            context: context,
+                            builder: (context) {
+                              return AlertDialog(
+                                content: const Text(
+                                    'Are you sure you want to update this Todo\'s status?'),
+                                actions: [
+                                  TextButton(
+                                      onPressed: () async {
+                                        bool isUpdate = await _todoController
+                                            .updateTodoStatus(
+                                                id: snapshot
+                                                    .data!.data[index].id,
+                                                status: !snapshot
+                                                    .data!.data[index].status);
+                                        Navigator.of(context).pop(isUpdate);
+                                        setState(() {});
+                                      },
+                                      child: const Text('Ok')),
+                                  TextButton(
+                                      onPressed: () =>
+                                          Navigator.of(context).pop(false),
+                                      child: const Text(
+                                        'Cancel',
+                                        style: TextStyle(color: Colors.red),
+                                      ))
+                                ],
+                              );
+                            });
+                      }
+
+                      // print('confirmDismiss');
+                    },
+                    key: UniqueKey(),
+                  child: TodoTileWidget(
                     todo: snapshot.data!.data[index],
-                  );
+                  ),
+                );
               },
               separatorBuilder: (context, index) {
                 return const SizedBox(
