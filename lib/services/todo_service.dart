@@ -1,10 +1,12 @@
+import 'dart:convert';
+
 import 'package:http/http.dart';
 
 class TodoService {
 
-  Future<Response> getAllTodoRequest() async {
+  Future<Response> getAllTodoRequest(bool status) async {
     return await get(
-        Uri.parse("https://crocodilia-liaison.cyclic-app.com/todos"));
+        Uri.parse("https://crocodilia-liaison.cyclic-app.com/todos/$status"));
   }
 
   Future<Response> getTodoByIdRequest(String id) async {
@@ -23,9 +25,13 @@ class TodoService {
       "date_time": dateTime
     };
 
+    Map<String,String> header = {
+      'Content-Type':'application/json'
+    };
+
     return await post(
         Uri.parse("https://crocodilia-liaison.cyclic-app.com/todo"),
-        body: body);
+        body: jsonEncode(body),headers: header);
   }
 
   //update status of todo
