@@ -5,13 +5,10 @@ import 'package:todo_app/services/todo_service.dart';
 
 class TodoController {
   final TodoService _todoService = TodoService();
-//PODO
-//data['data']['acknowledged']
-//data:data['results']['acknowledged']
-//data.acknowledged
-  Future<Todo?> getAllTodos() async {
+
+  Future<Todo?> getAllTodos({bool status = false}) async {
     Todo? _todo;
-    await _todoService.getAllTodoRequest().then((response) {
+    await _todoService.getAllTodoRequest(status).then((response) {
       int statusCode = response.statusCode;
       if (statusCode == 200) {
         //success
@@ -21,9 +18,30 @@ class TodoController {
         _todo = null;
       }
     }).catchError((onError) {
-  
       _todo = null;
     });
     return _todo;
+  }
+
+  Future<bool> createTodo(
+      {required String title,
+      required String description,
+      required String dateTime}) async {
+    bool isSuccessful = false;
+    await _todoService
+        .createTodoRequest(
+            title: title, description: description, dateTime: dateTime)
+        .then((response) {
+      print(response.body);
+      int statusCode = response.statusCode;
+      if (statusCode == 201) {
+        isSuccessful = true;
+      } else {
+        isSuccessful = false;
+      }
+    }).catchError((onError) {
+      isSuccessful = false;
+    });
+    return isSuccessful;
   }
 }
