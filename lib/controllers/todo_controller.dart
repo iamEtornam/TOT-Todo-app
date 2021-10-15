@@ -32,7 +32,6 @@ class TodoController {
         .createTodoRequest(
             title: title, description: description, dateTime: dateTime)
         .then((response) {
-      print(response.body);
       int statusCode = response.statusCode;
       if (statusCode == 201) {
         isSuccessful = true;
@@ -43,5 +42,44 @@ class TodoController {
       isSuccessful = false;
     });
     return isSuccessful;
+  }
+
+  //delete a todo
+  Future<bool> deleteTodo(String id) async {
+    bool isDeleted = false;
+
+    await _todoService.deleteTodoRequest(id).then((response) {
+      int statusCode = response.statusCode;
+      if (statusCode == 200) {
+        //delete success
+        isDeleted = true;
+      } else {
+        // delete error
+        isDeleted = false;
+      }
+    }).catchError((onError) {
+      isDeleted = false;
+    });
+
+    return isDeleted;
+  }
+
+  //update todo status to true
+  Future<bool> updateTodoStatus(
+      {required String id, required bool status}) async {
+    bool isUpdated = false;
+    await _todoService
+        .updateTodoRequest(status: status, id: id)
+        .then((response) {
+      int statusCode = response.statusCode;
+      if (statusCode == 200) {
+        isUpdated = true;
+      } else {
+        isUpdated = false;
+      }
+    }).catchError((onError) {
+      isUpdated = false;
+    });
+    return isUpdated;
   }
 }
