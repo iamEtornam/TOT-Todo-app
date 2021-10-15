@@ -39,13 +39,17 @@ class TodoService {
       {required bool status, required String id}) async {
     Map<String, bool> body = {"status": status};
 
+     Map<String,String> header = {
+      'Content-Type':'application/json'
+    };
+
     return await patch(
         Uri.parse("https://crocodilia-liaison.cyclic-app.com/todos/$id"),
-        body: body);
+        body: jsonEncode(body),headers: header);
   }
 
   //delete a todo
-  Future<Response> deleteTodo(String id) async {
+  Future<Response> deleteTodoRequest(String id) async {
     return await delete(
         Uri.parse("https://crocodilia-liaison.cyclic-app.com/todos/$id"));
   }
