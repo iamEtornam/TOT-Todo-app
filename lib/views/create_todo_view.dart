@@ -23,6 +23,8 @@ class _CreateTodoViewState extends State<CreateTodoView> {
 
   final TodoController _todoController = TodoController();
 
+  bool isLoading = false;
+
   @override
   void dispose() {
     _timeController.clear();
@@ -96,7 +98,6 @@ class _CreateTodoViewState extends State<CreateTodoView> {
                         lastDate: DateTime.now().add(const Duration(days: 365)),
                       ).then((value) {
                         setState(() {
-                          print(value);
                           _dateController.text =
                               DateFormat.yMMMMd().format(value!);
                         });
@@ -159,17 +160,24 @@ class _CreateTodoViewState extends State<CreateTodoView> {
               ],
             ),
             const SizedBox(height: 35),
-            TextButton(
+            isLoading ? const Center(child: CircularProgressIndicator()) : TextButton(
               onPressed: () async {
                 if (_formKey.currentState!.validate()) {
                   String dateTime =
                       _dateController.text + " " + _timeController.text;
                   // String dateTime = '${_dateController.text}  ${_timeController.text}';
+                  setState(() {
+                    isLoading = true;
+                  });
 
                   bool isSuccessful = await _todoController.createTodo(
                       title: _titleController.text,
                       description: _descriptionController.text,
                       dateTime: dateTime);
+
+                  setState(() {
+                    isLoading = false;
+                  });
                   if (isSuccessful) {
                     //do something
 
