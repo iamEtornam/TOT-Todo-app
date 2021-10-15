@@ -32,15 +32,18 @@ class HomeView extends StatelessWidget {
         ],
       ),
       body: FutureBuilder<Todo?>(
-          future: _todoController.getAllTodos(),
+          future: _todoController.getAllTodos(status: false),
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting &&
                 snapshot.data == null) {
-              return CircularProgressIndicator();
+              return const CircularProgressIndicator();
             }
             if (snapshot.connectionState == ConnectionState.done &&
                 snapshot.data == null) {
-              return Text('Something went wrong',style: TextStyle(fontSize: 30),);
+              return const Text(
+                'Something went wrong',
+                style: TextStyle(fontSize: 30),
+              );
             }
             return ListView.separated(
                 padding: const EdgeInsets.all(16),
@@ -121,7 +124,7 @@ class HomeView extends StatelessWidget {
 }
 
 class CompletedTodoWidget extends StatelessWidget {
-   CompletedTodoWidget({
+  CompletedTodoWidget({
     Key? key,
   }) : super(key: key);
 
@@ -130,30 +133,32 @@ class CompletedTodoWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return FutureBuilder<Todo?>(
-          future: _todoController.getAllTodos(),
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting &&
-                snapshot.data == null) {
-              return CircularProgressIndicator();
-            }
-            if (snapshot.connectionState == ConnectionState.done &&
-                snapshot.data == null) {
-              return Text('Something went wrong',style: TextStyle(fontSize: 30),);
-            }
-            return ListView.separated(
-                padding: const EdgeInsets.all(16),
-                itemBuilder: (context, index) {
-                  return TodoTileWidget(
+        future: _todoController.getAllTodos(status: true),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting &&
+              snapshot.data == null) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          if (snapshot.connectionState == ConnectionState.done &&
+              snapshot.data == null) {
+            return const Text(
+              'Something went wrong',
+              style: TextStyle(fontSize: 30),
+            );
+          }
+          return ListView.separated(
+              padding: const EdgeInsets.all(16),
+              itemBuilder: (context, index) {
+                 return TodoTileWidget(
                     todo: snapshot.data!.data[index],
                   );
-                },
-                separatorBuilder: (context, index) {
-                  return const SizedBox(
-                    height: 10,
-                  );
-                },
-                itemCount: snapshot.data!.data.length);
-          })
-      ;
+              },
+              separatorBuilder: (context, index) {
+                return const SizedBox(
+                  height: 10,
+                );
+              },
+              itemCount: snapshot.data!.data.length);
+        });
   }
 }
