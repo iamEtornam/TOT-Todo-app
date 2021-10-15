@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:todo_app/controllers/todo_controller.dart';
 import 'package:todo_app/utilities/utils.dart';
 
 class CreateTodoView extends StatefulWidget {
@@ -19,6 +20,17 @@ class _CreateTodoViewState extends State<CreateTodoView> {
   final TextEditingController _timeController = TextEditingController();
 
   final GlobalKey<FormState> _formKey = GlobalKey();
+
+  final TodoController _todoController = TodoController();
+
+  @override
+  void dispose() {
+    _timeController.clear();
+    _descriptionController.clear();
+    _dateController.clear();
+    _titleController.clear();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -105,11 +117,10 @@ class _CreateTodoViewState extends State<CreateTodoView> {
                       if (value!.isEmpty) {
                         return 'Select enter a date';
                       }
-                 
-                      if (value  == DateFormat.yMMMMd().format(DateTime.now())) {
+
+                      if (value == DateFormat.yMMMMd().format(DateTime.now())) {
                         return 'You selected today\'s date';
                       }
-                          
                     },
                   ),
                 ),
@@ -138,10 +149,10 @@ class _CreateTodoViewState extends State<CreateTodoView> {
                         floatingLabelBehavior: FloatingLabelBehavior.never,
                         focusedBorder: const UnderlineInputBorder(
                             borderSide: BorderSide(color: customBlue))),
-                               validator: (value) {
+                    validator: (value) {
                       if (value!.isEmpty) {
                         return 'Select enter a time';
-                      }   
+                      }
                     },
                   ),
                 ),
@@ -149,14 +160,51 @@ class _CreateTodoViewState extends State<CreateTodoView> {
             ),
             const SizedBox(height: 35),
             TextButton(
-              onPressed: () {
+              onPressed: () async {
                 if (_formKey.currentState!.validate()) {
-                  print(_titleController.text);
-                  print(_descriptionController.text);
-                  print(_dateController.text);
-                  print(_timeController.text);
+                  String dateTime =
+                      _dateController.text + " " + _timeController.text;
+                  // String dateTime = '${_dateController.text}  ${_timeController.text}';
+
+                  bool isSuccessful = await _todoController.createTodo(
+                      title: _titleController.text,
+                      description: _descriptionController.text,
+                      dateTime: dateTime);
+                  if (isSuccessful) {
+                    //do something
+
+                    _timeController.clear();
+                    _descriptionController.clear();
+                    _dateController.clear();
+                    _titleController.clear();
+                    SnackBar snackBar = const SnackBar(
+                      content: Text('Todo created successfully!',
+                          style: TextStyle(
+                            color: Colors.green,
+                          )),
+                    );
+
+                    ScaffoldMessenger.of(context).showSnackBar(snackBar);
+                  } else {
+                    //do another thing
+                    SnackBar snackBar = const SnackBar(
+                      content: Text('Failed to create Todo!',
+                          style: TextStyle(
+                            color: Colors.red,
+                          )),
+                    );
+
+                    ScaffoldMessenger.of(context).showSnackBar(snackBar);
+                  }
                 } else {
-                  print('please enter data');
+                  SnackBar snackBar = const SnackBar(
+                    content: Text('All fields are required!',
+                        style: TextStyle(
+                          color: Colors.blue,
+                        )),
+                  );
+
+                  ScaffoldMessenger.of(context).showSnackBar(snackBar);
                 }
               },
               child: const Text(
